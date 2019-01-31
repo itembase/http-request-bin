@@ -9,7 +9,7 @@ dependencies {
 
 docker {
     springBootApplication {
-        baseImage.set("openjdk:11-jre")
+        baseImage.set("openjdk:11-jre-slim")
         ports.set(listOf(8080))
         tag.set("itembase/http-request-bin:$version")
     }
