@@ -4,7 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
@@ -24,27 +26,58 @@ public class HttpRequestBinApplication {
     RouterFunction<ServerResponse> importRouter() {
         return route(
             path("/**"),
-            request -> request
-                .bodyToMono(String.class)
-                .switchIfEmpty(Mono.just(""))
-                .flatMap(body -> {
+            request -> {
+                final var contentType = request.headers().contentType();
+
+                if (contentType.isPresent() && contentType.get().equals(MediaType.APPLICATION_FORM_URLENCODED)) {
                     log.info("-------------------------- Data begin -------------------------");
-                    log.info(request.method().name());
-                    log.info(request.path());
 
-                    request
-                        .headers()
-                        .asHttpHeaders()
-                        .toSingleValueMap()
-                        .forEach((key, value) ->
-                            log.info("Header={}, Value={}", key, value)
-                        );
+                    printRequest(request);
 
-                    log.info(body);
-                    log.info("--------------------------- Data ends -------------------------");
+                    return request
+                        .formData()
+                        .flatMap(formData -> {
+                            formData
+                                .keySet()
+                                .forEach(key -> formData
+                                    .get(key)
+                                    .forEach(value -> log.info("Key={}, Value={}", key, value))
+                                );
 
-                    return ServerResponse.ok().build();
-                })
+                            log.info("--------------------------- Data ends -------------------------");
+
+                            return Mono.empty();
+                        })
+                        .then(ServerResponse.ok().build());
+                }
+
+                return request
+                    .bodyToMono(String.class)
+                    .switchIfEmpty(Mono.just(""))
+                    .flatMap(body -> {
+                        log.info("--------------------------- Data begin -------------------------");
+
+                        printRequest(request);
+
+                        log.info(body);
+                        log.info("--------------------------- Data ends -------------------------");
+
+                        return ServerResponse.ok().build();
+                    });
+            }
         );
+    }
+
+    private void printRequest(ServerRequest request) {
+        log.info(request.method().name());
+        log.info(request.path());
+
+        request
+            .headers()
+            .asHttpHeaders()
+            .toSingleValueMap()
+            .forEach((key, value) ->
+                log.info("Header={}, Value={}", key, value)
+            );
     }
 }
