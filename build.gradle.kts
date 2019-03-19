@@ -2,7 +2,7 @@ subprojects {
     apply(plugin = "java")
 
     group = "com.itembase"
-    version = "0.0.2"
+    version = "0.0.3"
 
     repositories {
         jcenter()
