@@ -73,6 +73,10 @@ public class HttpRequestBinApplication {
         log.info(request.path());
 
         request
+            .queryParams()
+            .forEach((key, values) -> values.forEach(value -> log.info("Query Key={}; Query Value={}", key, value)));
+
+        request
             .headers()
             .asHttpHeaders()
             .toSingleValueMap()
